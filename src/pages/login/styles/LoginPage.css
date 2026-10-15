@@ -1,0 +1,49 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+
+.jb-login-root{min-height:100vh;background:#f7f4ee;color:#171717;font-family:Georgia,'Times New Roman',serif}
+.jb-login-topbar{height:67px;background:#171717;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(22px,3vw,56px);color:#f4e4c4;border-bottom:2px solid #c69a44}
+.jb-login-topbar-brand{display:flex;align-items:center;gap:19px;white-space:nowrap}
+.jb-header-monogram{font-size:34px;letter-spacing:-5px;font-weight:700;font-style:italic;background:linear-gradient(140deg,#f9e7a8 0%,#b77d19 55%,#fff2c8 78%,#b47c1c 100%);color:transparent;background-clip:text;padding-right:7px}
+.jb-header-name{font-size:clamp(19px,2vw,30px);font-weight:700;letter-spacing:.065em;color:#edcf8d}
+.jb-header-divider{height:29px;width:1px;background:#6b6660}
+.jb-header-system{font-size:clamp(12px,1.16vw,17px);color:#eee7e1;letter-spacing:.01em}
+.jb-secure{display:flex;align-items:center;gap:10px;font-size:15px;color:#e7dfd4;white-space:nowrap}
+.jb-secure svg{color:#d4a747}
+.jb-login-layout{display:grid;grid-template-columns:minmax(0,56%) minmax(0,44%);min-height:calc(100vh - 67px);overflow:hidden}
+.jb-showroom-panel{height:calc(100vh - 67px);min-height:700px;overflow:hidden;background:#6c1716}
+.jb-showroom-panel img{display:block;width:100%;height:100%;object-fit:fill}
+.jb-form-side{display:flex;align-items:center;justify-content:center;padding:22px 26px;background:linear-gradient(125deg,#edeae5,#fffdfa 72%,#f2ede6)}
+.jb-login-card{width:min(100%,625px);border-radius:28px;background:linear-gradient(155deg,#fff,#fff 82%,#f6f2ed);box-shadow:0 18px 42px #1b171721,0 3px 12px #1b17170c;padding:22px 37px 0;overflow:hidden}
+.jb-main-logo{display:block;width:min(100%,365px);height:auto;max-height:222px;object-fit:contain;margin:0 auto 2px;mix-blend-mode:multiply}
+.jb-signin-heading{margin:0;text-align:center;font-size:clamp(35px,3.2vw,50px);font-weight:700;letter-spacing:-.025em;line-height:1.13}
+.jb-signin-subtitle{text-align:center;font-size:clamp(14px,1.3vw,19px);margin:4px 0 18px}
+.jb-role-selector{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid #d9d6d1;border-radius:11px;padding:3px;gap:3px;background:#fafafa;margin-bottom:16px}
+.jb-role-option{display:flex;align-items:center;justify-content:center;gap:10px;border-radius:9px;min-height:46px;color:#272727;font-size:16px;cursor:pointer;transition:background .2s,color .2s,box-shadow .2s}
+.jb-role-option:hover:not(.jb-role-active){background:#f0e8dc}
+.jb-role-active{background:linear-gradient(135deg,#a0141c,#760510);color:white;outline:2px solid #d7a337;box-shadow:0 2px 5px #6c051329}
+.jb-field{display:block;margin:0 0 14px;font-size:16px;font-weight:600}
+.jb-field>span{display:block;margin-bottom:6px}
+.jb-input-wrap{border:1px solid #d3d0cb;background:linear-gradient(180deg,#fff,#fafafa);border-radius:9px;height:49px;display:flex;align-items:center;transition:border .18s,box-shadow .18s;overflow:hidden}
+.jb-input-wrap:focus-within{border-color:#bb8a28;box-shadow:0 0 0 3px #c99a3226}
+.jb-field-icon{flex:none;margin-left:16px;color:#777}
+.jb-input-wrap input{height:100%;border:0;background:transparent;outline:none;padding:0 15px;min-width:0;flex:1;font-family:inherit;font-size:16px;color:#181818}
+.jb-input-wrap input::placeholder{color:#9c9a9a}
+.jb-password-toggle{display:grid;place-items:center;width:45px;height:44px;flex:none;cursor:pointer;color:#767676}
+.jb-password-toggle:hover{color:#8b2420}
+.jb-remember{display:inline-flex;align-items:center;gap:10px;margin:-2px 0 15px;cursor:pointer;font-size:15px;color:#3b3531;position:relative}
+.jb-remember input{position:absolute;opacity:0;left:0;width:20px;height:20px}
+.jb-checkbox-box{width:21px;height:21px;display:grid;place-items:center;border:1px solid #bca47f;background:white;border-radius:4px;color:transparent}
+.jb-remember input:checked+.jb-checkbox-box{background:#c89432;color:white;border-color:#b7842a}
+.jb-remember input:focus-visible+.jb-checkbox-box{outline:3px solid #d1ac55}
+.jb-login-error{color:#8b2420;font-family:'DM Sans',sans-serif;font-size:13px;background:#fff1f0;border:1px solid #f0cbc9;padding:9px 12px;border-radius:7px;margin:0 0 10px}
+.jb-submit{width:100%;min-height:56px;border:1px solid #d7a52e;border-radius:11px;display:flex;align-items:center;justify-content:center;gap:15px;background:linear-gradient(180deg,#ffe7a2 0%,#e8b957 52%,#c58b24 100%);box-shadow:inset 0 1px 1px #fff7d8;font-size:25px;color:#17130d;cursor:pointer;font-weight:700;transition:transform .15s,filter .15s}
+.jb-submit:hover:not(:disabled){filter:brightness(1.035);transform:translateY(-1px)}
+.jb-submit:disabled{opacity:.7;cursor:wait}
+.jb-help-line{display:flex;align-items:center;justify-content:center;gap:19px;color:#8b2420;font-size:15px;margin:17px 0}
+.jb-help-line span{height:1px;background:#bdbdbd;width:55px}
+.jb-login-footer{background:#f7f6f4;display:flex;align-items:center;justify-content:center;gap:8px;color:#787878;font-size:13px;min-height:53px;margin:0 -37px;padding:12px;text-align:center}
+.jb-mobile-tagline{display:none}
+@media(max-height:850px) and (min-width:961px){.jb-login-card{padding-top:10px}.jb-main-logo{max-height:165px;width:300px}.jb-signin-heading{font-size:38px}.jb-signin-subtitle{margin-bottom:10px}.jb-input-wrap{height:42px}.jb-role-option{min-height:40px}.jb-field{margin-bottom:11px}.jb-submit{min-height:48px}}
+@media(max-width:1190px){.jb-login-layout{grid-template-columns:50% 50%}.jb-form-side{padding:20px}.jb-login-card{padding:22px 25px 0}.jb-login-footer{margin:0 -25px}.jb-role-option{gap:5px;font-size:14px}}
+@media(max-width:960px){.jb-header-system,.jb-header-divider{display:none}.jb-login-layout{display:block}.jb-showroom-panel{display:none}.jb-form-side{min-height:calc(100vh - 67px);padding:28px 17px 12px}.jb-login-card{max-width:570px}.jb-mobile-tagline{display:flex;justify-content:center;gap:7px;align-items:center;color:#8a7767;font-size:13px;margin:20px 0 5px}}
+@media(max-width:490px){.jb-login-topbar{height:61px;padding:0 13px}.jb-header-name{font-size:17px}.jb-header-monogram{font-size:27px}.jb-secure{font-size:0;gap:0}.jb-secure svg{width:19px;height:19px}.jb-form-side{min-height:calc(100vh - 61px);padding:17px 12px}.jb-login-card{padding:18px 18px 0;border-radius:19px}.jb-main-logo{max-height:168px;width:270px}.jb-signin-heading{font-size:36px}.jb-signin-subtitle{font-size:14px}.jb-role-option{font-size:12px;gap:4px;min-height:43px}.jb-role-option svg{width:15px}.jb-input-wrap{height:47px}.jb-submit{font-size:21px;min-height:52px}.jb-login-footer{margin:0 -18px;font-size:12px}.jb-help-line{font-size:13px}}
