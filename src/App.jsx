@@ -12,14 +12,14 @@ import ComingSoon from "./pages/placeholder/ComingSoon";
 import Products from "./pages/products/Products";
 import Inventory from "./pages/inventory/Inventory";
 import StockMovements from "./pages/stock-movements/StockMovements";
+import Sales from "./pages/sales/Sales";
+import Customers from "./pages/customers/Customers";
+import CustomerDebts from "./pages/customer-debts/CustomerDebts";
+import Purchases from "./pages/purchases/Purchases";
+import Suppliers from "./pages/suppliers/Suppliers";
+import SupplierDebts from "./pages/supplier-debts/SupplierDebts";
 
 const upcomingPages = [
-  "sales",
-  "customers",
-  "customer-debts",
-  "purchases",
-  "suppliers",
-  "supplier-debts",
   "expenses",
   "financial-reports",
   "branches",
@@ -42,6 +42,12 @@ export default function App() {
               <Route path="/products" element={<Products />} />
               <Route path="/inventory" element={<Inventory />} />
               <Route path="/stock-movements" element={<StockMovements />} />
+              <Route path="/sales" element={<Sales />} />
+              <Route path="/customers" element={<Customers />} />
+              <Route path="/customer-debts" element={<CustomerDebts />} />
+              <Route path="/purchases" element={<Purchases />} />
+              <Route path="/suppliers" element={<Suppliers />} />
+              <Route path="/supplier-debts" element={<SupplierDebts />} />
 
               {upcomingPages.map((path) => (
                 <Route key={path} path={`/${path}`} element={<ComingSoon />} />
