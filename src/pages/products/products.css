@@ -1,0 +1,23 @@
+.jbi-products-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2.25fr) minmax(285px, .78fr);
+  gap: 15px;
+  align-items: start;
+}
+
+.jbi-product-cell { display: flex; align-items: center; gap: 12px; min-width: 220px; }
+.jbi-product-cell img, .jbi-no-image { width: 52px; height: 45px; object-fit: contain; border-radius: 7px; background: #f8f7f6; }
+.jbi-no-image { display: grid; place-items: center; color: #bf891f; }
+.jbi-product-cell strong { display: block; font-size: 12px; }
+.jbi-product-cell small { display: block; font-size: 10px; margin-top: 3px; color: #999; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+.jbi-detail-image { width: 100%; height: 220px; object-fit: contain; background: #f8f8f8; border-radius: 9px; }
+.jbi-image-placeholder { display: grid; place-items: center; color: #c3a778; }
+.jbi-product-detail h3 { font: 700 20px Georgia, serif; margin: 12px 0 5px; }
+.jbi-product-detail p { font-size: 12px; }
+.jbi-detail-description { color: #777; line-height: 1.65; margin: 16px 0; }
+.jbi-variant-title { border-top: 1px solid #f0efec; padding-top: 13px; font-size: 12px; }
+.jbi-variant-list { display: flex; flex-wrap: wrap; gap: 7px; padding: 12px 0 20px; }
+.jbi-variant-list button { font-size: 11px; padding: 8px 10px; border: 1px solid #e6e5e3; background: #fafafa; border-radius: 99px; }
+.jbi-variant-list button.selected { color: white; background: #ae760f; border-color: #ae760f; }
+.jbi-detail-btn { width: 100%; margin-top: 16px; }
+@media (max-width: 1170px) { .jbi-products-grid { grid-template-columns: 1fr; } }

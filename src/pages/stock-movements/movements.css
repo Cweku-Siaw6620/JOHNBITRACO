@@ -1,0 +1,6 @@
+.jbi-movements-hint { margin: -2px 0 12px; }
+.jbi-reason { max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+.jbi-positive { color: #15824b; font-weight: 700; }
+.jbi-negative { color: #a8202b; font-weight: 700; }
+.jbi-movement-grid { gap: 18px; }
+.jbi-break { overflow-wrap: anywhere; }

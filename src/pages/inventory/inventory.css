@@ -1,0 +1,7 @@
+.jbi-branch-label { color: #85530e; font-weight: 650; font-size: 13px; padding: 10px 13px; background: #fff3dc; border-radius: 8px; }
+.jbi-check { display: flex; align-items: center; gap: 8px; white-space: nowrap; font-size: 12px; color: #53555c; }
+.jbi-check input { accent-color: #8b2420; }
+.jbi-selected-stock { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-top: 16px; font-size: 12px; }
+.jbi-selected-stock strong { font: 700 18px Georgia, serif; }
+.jbi-selected-stock span { color: #777; }
+.jbi-selected-stock button { margin-left: auto; }
