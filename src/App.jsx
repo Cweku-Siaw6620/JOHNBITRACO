@@ -38,11 +38,15 @@ export default function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/products" element={<Products />} />
               <Route path="/inventory" element={<Inventory />} />
-              <Route path="/stock-movements" element={<StockMovements />} />
+              <Route element={<ProtectedRoute roles={["admin", "assistant"]} />}>
+                <Route path="/stock-movements" element={<StockMovements />} />
+              </Route>
               <Route path="/sales" element={<Sales />} />
               <Route path="/customers" element={<Customers />} />
               <Route path="/customer-debts" element={<CustomerDebts />} />
-              <Route path="/branches" element={<Branches />} />
+              <Route element={<ProtectedRoute roles={["admin"]} />}>
+                <Route path="/branches" element={<Branches />} />
+              </Route>
               <Route path="/staff" element={<Staff />} />
               <Route path="/expenses" element={<Expenses />} />
               <Route path="/financial-reports" element={<FinancialReports />} />

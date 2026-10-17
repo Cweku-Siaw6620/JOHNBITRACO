@@ -13,7 +13,7 @@ const groups = [
   { title: "INVENTORY", links: [
     { label: "Products", to: "/products", icon: Package },
     { label: "Inventory", to: "/inventory", icon: Boxes },
-    { label: "Stock Movements", to: "/stock-movements", icon: History },
+    { label: "Stock Movements", to: "/stock-movements", icon: History, roles: ["admin", "assistant"] },
   ] },
   { title: "SALES & CUSTOMERS", roles: ["admin", "assistant"], links: [
     { label: "Sales", to: "/sales", icon: ShoppingCart },
@@ -25,7 +25,7 @@ const groups = [
     { label: "Financial Reports", to: "/financial-reports", icon: FileBarChart2 },
   ] },
   { title: "ADMINISTRATION", links: [
-    { label: "Branches", to: "/branches", icon: Building2 },
+    { label: "Branches", to: "/branches", icon: Building2, roles: ["admin"] },
     { label: "Staff Management", to: "/staff", icon: UserRoundCog, roles: ["admin"] },
   ] },
 ];
