@@ -21,7 +21,7 @@ export default function AppLayout() {
           <button className="jb-icon-btn" onClick={() => setMobileOpen(p => !p)} aria-label="Toggle navigation"><Menu size={22} /></button>
           <div className="jb-topbar-search"><Search size={19} /><span>Search anything...</span></div>
           <div className="jb-topbar-grow" />
-          <span className="jb-notification" aria-label="Notifications"><Bell size={21} /></span>
+          
           <div className="jb-account-area">
             <button className="jb-account-button" onClick={() => setAccountOpen(p => !p)} aria-expanded={accountOpen}>
               <span className="jb-avatar">{initials || "JB"}</span>
@@ -29,7 +29,6 @@ export default function AppLayout() {
               <ChevronDown size={15} />
             </button>
             {accountOpen && <div className="jb-account-menu">
-              <Link to="/profile" onClick={() => setAccountOpen(false)}><UserCircle size={16} /> My Profile</Link>
               <button onClick={() => { signOutLocally(); setAccountOpen(false); }}><LogOut size={16} /> Sign out</button>
             </div>}
           </div>

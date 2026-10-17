@@ -20,11 +20,6 @@ const groups = [
     { label: "Customers", to: "/customers", icon: Users },
     { label: "Customer Debts", to: "/customer-debts", icon: Wallet },
   ] },
-  { title: "PURCHASING", roles: ["admin", "assistant"], links: [
-    { label: "Purchases", to: "/purchases", icon: ShoppingBag },
-    { label: "Suppliers", to: "/suppliers", icon: Truck },
-    { label: "Supplier Debts", to: "/supplier-debts", icon: Wallet },
-  ] },
   { title: "FINANCE", roles: ["admin", "assistant"], links: [
     { label: "Expenses", to: "/expenses", icon: ReceiptText },
     { label: "Financial Reports", to: "/financial-reports", icon: FileBarChart2 },
@@ -32,7 +27,6 @@ const groups = [
   { title: "ADMINISTRATION", links: [
     { label: "Branches", to: "/branches", icon: Building2 },
     { label: "Staff Management", to: "/staff", icon: UserRoundCog, roles: ["admin"] },
-    { label: "Settings", to: "/settings", icon: Settings, roles: ["admin", "assistant"] },
   ] },
 ];
 
@@ -42,7 +36,7 @@ export default function Sidebar({ role = "employee", open, onClose, collapsed, o
       {open && <button type="button" className="jb-sidebar-shade" onClick={onClose} aria-label="Close navigation" />}
       <aside className={`jb-sidebar ${open ? "is-open" : ""} ${collapsed ? "is-collapsed" : ""}`}>
         <div className="jb-sidebar-brand">
-          <img src={logo} alt="JOHNBITRACO" />
+          <img src={logo} alt="JOHNBTRACO" />
           <span>INVENTORY & FINANCIAL SYSTEM</span>
           <button className="jb-sidebar-mobile-close" onClick={onClose} aria-label="Close menu"><X size={19} /></button>
         </div>

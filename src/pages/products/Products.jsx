@@ -9,6 +9,24 @@ import {
 import "./products.css";
 
 const categories = ["Executive", "Loafers", "Boots", "Other"];
+const brands = [
+  "Louis Vuitton",
+  "Feragamo",
+  "Tods",
+  "Anax",
+  "Luboutin",
+  "Hermex",
+  "Valentino",
+  "Gucci",
+  "Butteri",
+  "Mr. Zenith",
+  "D&G",
+  "Rossi",
+  "Maurizio",
+  "Balanciaga",
+  "Clarks",
+  "Polo",
+];
 const cleanProduct = { name: "", brand: "", category: "Executive", description: "", imageUrl: "" };
 const cleanVariant = { sku: "", size: "", color: "", retailPrice: "", wholesalePrice: "", referenceCost: "" };
 
@@ -264,7 +282,11 @@ export default function Products() {
           {modal === "product" ? <>
             <div className="jbi-field"><label>Product name</label><input required minLength={2} maxLength={150} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></div>
             <div className="jbi-form-grid">
-              <div className="jbi-field"><label>Brand</label><input value={form.brand} onChange={(event) => setForm({ ...form, brand: event.target.value })} /></div>
+              <div className="jbi-field"><label>Brand</label><select value={form.brand} onChange={(event) => setForm({ ...form, brand: event.target.value })}>
+                <option value="">Select a brand</option>
+                {form.brand && !brands.includes(form.brand) && <option value={form.brand}>{form.brand}</option>}
+                {brands.map((brand) => <option key={brand} value={brand}>{brand}</option>)}
+              </select></div>
               <div className="jbi-field"><label>Category</label><select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}>{categories.map((item) => <option key={item}>{item}</option>)}</select></div>
             </div>
             <div className="jbi-field"><label>Image URL (HTTPS)</label><input type="url" value={form.imageUrl} onChange={(event) => setForm({ ...form, imageUrl: event.target.value })} placeholder="https://..." /></div>
@@ -277,7 +299,7 @@ export default function Products() {
               <div className="jbi-field"><label>Color</label><input required value={form.color} onChange={(event) => setForm({ ...form, color: event.target.value })} /></div>
             </div>}
             <div className="jbi-form-grid">
-              {[["retailPrice", "Retail price (GH₵)"], ["wholesalePrice", "Wholesale price (GH₵)"], ["referenceCost", "Reference cost (GH₵)"]].map(([key, label]) => <div className="jbi-field" key={key}><label>{label}</label><input type="number" min="0" step="0.01" required={key !== "referenceCost"} value={form[key]} onChange={(event) => setForm({ ...form, [key]: event.target.value })} /></div>)}
+              {[["retailPrice", "Retail price (GH₵)"], ["wholesalePrice", "Wholesale price (GH₵)"], ["referenceCost", "Estimated Purchase Cost (GH₵)"]].map(([key, label]) => <div className="jbi-field" key={key}><label>{label}</label><input type="number" min="0" step="0.01" required={key !== "referenceCost"} value={form[key]} onChange={(event) => setForm({ ...form, [key]: event.target.value })} /></div>)}
             </div>
             {editingId && <div className="jbi-field"><label>Variant status</label><select value={String(form.isActive)} onChange={(event) => setForm({ ...form, isActive: event.target.value === "true" })}><option value="true">Active</option><option value="false">Inactive</option></select></div>}
           </>}

@@ -15,17 +15,14 @@ import StockMovements from "./pages/stock-movements/StockMovements";
 import Sales from "./pages/sales/Sales";
 import Customers from "./pages/customers/Customers";
 import CustomerDebts from "./pages/customer-debts/CustomerDebts";
-import Purchases from "./pages/purchases/Purchases";
-import Suppliers from "./pages/suppliers/Suppliers";
-import SupplierDebts from "./pages/supplier-debts/SupplierDebts";
+import Branches from "./pages/branches/Branches";
+import Staff from "./pages/staff/Staff";
+import Expenses from "./pages/expenses/Expenses";
+import FinancialReports from "./pages/financial-reports/FinancialReports";
 
 const upcomingPages = [
   "expenses",
   "financial-reports",
-  "branches",
-  "staff",
-  "settings",
-  "profile",
 ];
 
 export default function App() {
@@ -45,9 +42,10 @@ export default function App() {
               <Route path="/sales" element={<Sales />} />
               <Route path="/customers" element={<Customers />} />
               <Route path="/customer-debts" element={<CustomerDebts />} />
-              <Route path="/purchases" element={<Purchases />} />
-              <Route path="/suppliers" element={<Suppliers />} />
-              <Route path="/supplier-debts" element={<SupplierDebts />} />
+              <Route path="/branches" element={<Branches />} />
+              <Route path="/staff" element={<Staff />} />
+              <Route path="/expenses" element={<Expenses />} />
+              <Route path="/financial-reports" element={<FinancialReports />} />
 
               {upcomingPages.map((path) => (
                 <Route key={path} path={`/${path}`} element={<ComingSoon />} />
