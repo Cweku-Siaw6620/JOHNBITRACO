@@ -17,6 +17,7 @@ export default function Staff() {
   const [dialog, setDialog] = useState(null);
   const [selected, setSelected] = useState(null);
   const [pin, setPin] = useState("");
+  const [transferBranch, setTransferBranch] = useState("");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -119,6 +120,45 @@ export default function Staff() {
     }
   }
 
+  const activeBranches = branches.filter((branch) => branch.isActive !== false);
+
+  function startTransfer(user) {
+    setSelected(user);
+    setTransferBranch(
+      typeof user.branch === "object" ? user.branch?._id || "" : user.branch || ""
+    );
+    setError("");
+    setSuccess("");
+    setDialog("transfer");
+  }
+
+  async function transferStaff(event) {
+    event.preventDefault();
+    setError("");
+    setSaving(true);
+
+    try {
+      const target = activeBranches.find((branch) => branch._id === transferBranch);
+
+      if (!target) {
+        throw new Error("Select an active branch.");
+      }
+
+      await administrationApi.editStaff(token, selected._id || selected.id, {
+        branch: transferBranch,
+      });
+
+      setDialog(null);
+      setSelected(null);
+      setSuccess(`Staff member assigned to ${target.name}. Existing sessions have been revoked.`);
+      setRefresh((value) => value + 1);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   if (!isAdmin) {
     return <div className="jba-page"><AdminMessage message="Only an Admin can manage staff accounts." /></div>;
   }
@@ -127,7 +167,7 @@ export default function Staff() {
     <div className="jba-page">
       <AdminPageHeader
         title="Staff Management"
-        description="Manage employee and assistant accounts across JOHNBITRACO branches."
+        description="Manage employee and assistant accounts across JOHNBTRACO branches."
         action={<button className="jba-primary" onClick={() => {
           setError("");
           setDialog("create");
@@ -214,6 +254,8 @@ export default function Staff() {
                             setDialog("reset");
                           }}>Reset PIN</button>
 
+                          <button className="jba-link" onClick={() => startTransfer(user)}>Change Branch</button>
+
                           <button className="jba-link" onClick={() => toggleActive(user)}>
                             {user.isActive === false ? "Activate" : "Deactivate"}
                           </button>
@@ -245,6 +287,45 @@ export default function Staff() {
             setRefresh((value) => value + 1);
           }}
         />
+      )}
+
+      {dialog === "transfer" && (
+        <AdminModal title={`Assign Branch — ${selected?.fullName}`} onClose={() => setDialog(null)}>
+          <form className="jba-form" onSubmit={transferStaff}>
+            <AdminMessage message={error} />
+
+            <label className="jba-field">
+              Assigned branch
+              <select
+                className="jba-select"
+                value={transferBranch}
+                onChange={(event) => setTransferBranch(event.target.value)}
+                required
+              >
+                <option value="">Select branch</option>
+                {activeBranches.map((branch) => (
+                  <option key={branch._id} value={branch._id}>
+                    {branch.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <p className="jba-note">
+              Changing an assignment ends the staff member's existing sessions.
+              They must sign in again to access their new branch.
+            </p>
+
+            <div className="jba-form-actions">
+              <button type="button" className="jba-secondary" onClick={() => setDialog(null)}>
+                Cancel
+              </button>
+              <button type="submit" className="jba-primary" disabled={saving}>
+                {saving ? "Saving..." : "Save Branch"}
+              </button>
+            </div>
+          </form>
+        </AdminModal>
       )}
 
       {dialog === "reset" && (

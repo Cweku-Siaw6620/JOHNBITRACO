@@ -16,20 +16,19 @@ export default function StaffForm({ token, branches, onClose, onSaved }) {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const mainBranch = branches.find((branch) => branch.code === "MAIN");
+    const firstActiveBranch = branches.find((branch) => branch.isActive !== false);
 
-    if (mainBranch) {
-      setForm((previous) => ({ ...previous, branch: mainBranch._id }));
+    if (firstActiveBranch) {
+      setForm((previous) => ({
+        ...previous,
+        branch: previous.branch || firstActiveBranch._id,
+      }));
     }
   }, [branches]);
 
   function update(name, value) {
     setForm((previous) => {
       const next = { ...previous, [name]: value };
-
-      if (name === "role" && value === "assistant") {
-        next.branch = branches.find((branch) => branch.code === "MAIN")?._id || "";
-      }
 
       return next;
     });
@@ -65,9 +64,8 @@ export default function StaffForm({ token, branches, onClose, onSaved }) {
     }
   }
 
-  const options = form.role === "assistant"
-    ? branches.filter((branch) => branch.code === "MAIN")
-    : branches.filter((branch) => branch.isActive !== false);
+  // Assistants and Employees can be assigned to any active branch.
+  const options = branches.filter((branch) => branch.isActive !== false);
 
   return (
     <AdminModal title="Register Staff Account" onClose={onClose}>
@@ -112,7 +110,7 @@ export default function StaffForm({ token, branches, onClose, onSaved }) {
               value={form.loginId}
               onChange={(event) => update("loginId", event.target.value)}
               minLength={3}
-              maxLength={32}
+              maxLength={30}
               required
               placeholder="e.g. AST002"
             />
@@ -136,8 +134,8 @@ export default function StaffForm({ token, branches, onClose, onSaved }) {
         </label>
 
         <p className="jba-note">
-          Assistants sign in using Login ID and PIN, and must belong to Main Branch.
-          Employees sign in with a unique five-digit PIN.
+          Assistants sign in using their Login ID and PIN. Employees sign in with a
+          unique five-digit PIN. Both roles can be assigned to any active branch.
         </p>
 
         <div className="jba-form-actions">
