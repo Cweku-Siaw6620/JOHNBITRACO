@@ -19,7 +19,7 @@ export default function Inventory() {
   const token = session?.token;
   const role = session?.user?.role;
   const admin = role === "admin";
-  const writable = role === "admin" || role === "assistant";
+  const writable = role === "admin";
 
   const [branches, setBranches] = useState([]);
   const [branchId, setBranchId] = useState(branchIdOf(session?.user?.branch));
