@@ -81,7 +81,7 @@ export default function LoginPage({ onLogin }) {
 
         <section className="jb-form-side">
           <div className="jb-login-card">
-            <img className="jb-main-logo" src={logo} alt="JOHNBITRACO ENT. – Deals in quality executive shoes" />
+            <img className="jb-main-logo" src={logo} alt="JOHNBITRACO ENT. – Deals in quality executive products" />
 
             <h1 className="jb-signin-heading">Sign in</h1>
             <p className="jb-signin-subtitle">Access your business dashboard securely</p>

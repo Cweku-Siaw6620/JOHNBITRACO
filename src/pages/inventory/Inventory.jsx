@@ -213,7 +213,7 @@ export default function Inventory() {
           {branches.map((branch) => <option key={branch._id} value={branch._id}>{branch.name}</option>)}
         </select>}
         {!admin && <span className="jbi-branch-label">{displayedBranch?.name || "My assigned branch"}</span>}
-        <SearchInput value={search} onChange={(value) => { setSearch(value); setPage(1); }} placeholder="Search shoe name or brand..." />
+        <SearchInput value={search} onChange={(value) => { setSearch(value); setPage(1); }} placeholder="Search product name or brand..." />
         <select className="jbi-select" value={category} onChange={(event) => { setCategory(event.target.value); setPage(1); }}>
           <option value="">All categories</option>
           {categories.map((item) => <option key={item}>{item}</option>)}
@@ -231,7 +231,7 @@ export default function Inventory() {
             const tone = stock.quantity === 0 ? "red" : stock.quantity <= stock.lowStockThreshold ? "amber" : "green";
 
             return <tr key={stock._id} className={selected?._id === stock._id ? "is-selected" : ""}>
-              <td><strong>{product.name || "Unknown shoe"}</strong><span className="jbi-subtext">{product.brand || ""}</span></td>
+              <td><strong>{product.name || "Unknown product"}</strong><span className="jbi-subtext">{product.brand || ""}</span></td>
               <td>{product.category || "—"}</td>
               <td><strong>{stock.quantity}</strong></td>
               <td>{stock.lowStockThreshold}</td>
@@ -262,7 +262,7 @@ export default function Inventory() {
           <div className="jbi-field"><label>Product</label><select required value={productId} onChange={(event) => selectProduct(event.target.value)}><option value="">Select product</option>{productChoices.map((item) => <option key={item._id} value={item._id}>{item.name}</option>)}</select></div>
           {resolvingProduct && <p className="jbi-hint">Loading product stock details...</p>}
         </>}
-        {selected && <p className="jbi-hint">{selected.variant?.product?.name || "Selected shoe"} — currently {selected.quantity} pairs.</p>}
+        {selected && <p className="jbi-hint">{selected.variant?.product?.name || "Selected product"} — currently {selected.quantity} pairs.</p>}
         {modal === "opening" ? <div className="jbi-form-grid">
           <div className="jbi-field"><label>Opening quantity</label><input required type="number" min="1" step="1" value={form.quantity} onChange={(event) => setForm({ ...form, quantity: event.target.value })} /></div>
           <div className="jbi-field"><label>Actual cost per pair (GH₵)</label><input required type="number" min="0" step="0.01" value={form.unitCost} onChange={(event) => setForm({ ...form, unitCost: event.target.value })} /></div>

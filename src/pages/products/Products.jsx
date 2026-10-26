@@ -2,6 +2,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useState,
 } from "react";
 
@@ -35,15 +36,18 @@ import {
 import "./products.css";
 
 
-const categories = [
+// ==================================================
+// Default suggestions
+// ==================================================
+
+const DEFAULT_CATEGORIES = [
   "Executive",
   "Loafers",
   "Boots",
   "Other",
 ];
 
-
-const brands = [
+const DEFAULT_BRANDS = [
   "Louis Vuitton",
   "Feragamo",
   "Tods",
@@ -63,10 +67,44 @@ const brands = [
 ];
 
 
+// ==================================================
+// Recent-entry storage
+// ==================================================
+
+const RECENT_BRAND_KEY =
+  "johnbtraco_recent_brand";
+
+const RECENT_CATEGORY_KEY =
+  "johnbtraco_recent_category";
+
+
+function getRecentValue(key) {
+  try {
+    return localStorage.getItem(key) || "";
+  } catch {
+    return "";
+  }
+}
+
+
+function saveRecentValue(key, value) {
+  try {
+    localStorage.setItem(key, value.trim());
+  } catch {
+    // Product saving should not fail if
+    // browser storage is unavailable.
+  }
+}
+
+
+// ==================================================
+// Helpers
+// ==================================================
+
 const emptyForm = {
   name: "",
   brand: "",
-  category: "Executive",
+  category: "",
   description: "",
   imageUrl: "",
   retailPrice: "",
@@ -107,12 +145,44 @@ function priceForInput(value) {
 }
 
 
+function buildSuggestions(values) {
+  const seen = new Set();
+
+  return values
+    .map((value) => String(value || "").trim())
+    .filter((value) => {
+      if (!value) {
+        return false;
+      }
+
+      const key = value.toLowerCase();
+
+      if (seen.has(key)) {
+        return false;
+      }
+
+      seen.add(key);
+
+      return true;
+    });
+}
+
+
+// ==================================================
+// Products component
+// ==================================================
+
 export default function Products() {
   const { session } = useAuth();
 
   const token = session?.token;
 
   const admin = session?.user?.role === "admin";
+
+
+  // ------------------------------------------------
+  // Products state
+  // ------------------------------------------------
 
   const [products, setProducts] = useState([]);
 
@@ -126,16 +196,45 @@ export default function Products() {
 
   const [selectedId, setSelectedId] = useState(null);
 
-  const [productStockItem, setProductStockItem] = useState(null);
+  const [productStockItem, setProductStockItem] =
+    useState(null);
+
+
+  // ------------------------------------------------
+  // Form state
+  // ------------------------------------------------
 
   const [modal, setModal] = useState(false);
 
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState({
+    ...emptyForm,
+  });
 
   const [editingId, setEditingId] = useState(null);
 
-  const [editingStockItemId, setEditingStockItemId] =
-    useState(null);
+  const [
+    editingStockItemId,
+    setEditingStockItemId,
+  ] = useState(null);
+
+
+  // ------------------------------------------------
+  // Recent values
+  // ------------------------------------------------
+
+  const [recentBrand, setRecentBrand] = useState(
+    () => getRecentValue(RECENT_BRAND_KEY)
+  );
+
+  const [recentCategory, setRecentCategory] =
+    useState(
+      () => getRecentValue(RECENT_CATEGORY_KEY)
+    );
+
+
+  // ------------------------------------------------
+  // General state
+  // ------------------------------------------------
 
   const [loading, setLoading] = useState(true);
 
@@ -149,19 +248,43 @@ export default function Products() {
 
   const delayedSearch = useDebounced(search);
 
+  const delayedCategory = useDebounced(category);
 
-  // --------------------------------------------------
+
+  // ------------------------------------------------
+  // Dynamic suggestions
+  // ------------------------------------------------
+
+  const brandSuggestions = useMemo(() => {
+    return buildSuggestions([
+      recentBrand,
+      ...products.map((product) => product.brand),
+      ...DEFAULT_BRANDS,
+    ]);
+  }, [recentBrand, products]);
+
+
+  const categorySuggestions = useMemo(() => {
+    return buildSuggestions([
+      recentCategory,
+      ...products.map((product) => product.category),
+      ...DEFAULT_CATEGORIES,
+    ]);
+  }, [recentCategory, products]);
+
+
+  // ------------------------------------------------
   // Load products
-  // --------------------------------------------------
+  // ------------------------------------------------
 
   const loadProducts = useCallback(
     async (signal) => {
       if (!token) {
+        setLoading(false);
         return;
       }
 
       setLoading(true);
-
       setError("");
 
       try {
@@ -171,10 +294,14 @@ export default function Products() {
             page,
             limit: 20,
             search: delayedSearch,
-            category,
+            category: delayedCategory.trim(),
           },
           signal
         );
+
+        if (signal?.aborted) {
+          return;
+        }
 
         setProducts(response.products || []);
 
@@ -191,7 +318,12 @@ export default function Products() {
         }
       }
     },
-    [token, page, delayedSearch, category]
+    [
+      token,
+      page,
+      delayedSearch,
+      delayedCategory,
+    ]
   );
 
 
@@ -205,9 +337,9 @@ export default function Products() {
   }, [loadProducts, refresh]);
 
 
-  // --------------------------------------------------
+  // ------------------------------------------------
   // Maintain selected product
-  // --------------------------------------------------
+  // ------------------------------------------------
 
   useEffect(() => {
     if (products.length === 0) {
@@ -226,9 +358,9 @@ export default function Products() {
   }, [products, selectedId]);
 
 
-  // --------------------------------------------------
-  // Load the internal stock item for the selected shoe
-  // --------------------------------------------------
+  // ------------------------------------------------
+  // Load internal product stock item
+  // ------------------------------------------------
 
   useEffect(() => {
     if (!token || !selectedId) {
@@ -241,7 +373,11 @@ export default function Products() {
     setProductStockItem(null);
 
     inventoryApi
-      .variants(token, selectedId, controller.signal)
+      .variants(
+        token,
+        selectedId,
+        controller.signal
+      )
       .then((response) => {
         if (!controller.signal.aborted) {
           setProductStockItem(
@@ -260,6 +396,10 @@ export default function Products() {
   }, [token, selectedId, refresh]);
 
 
+  // ------------------------------------------------
+  // Derived values
+  // ------------------------------------------------
+
   const selectedProduct = products.find(
     (product) => product._id === selectedId
   );
@@ -269,9 +409,9 @@ export default function Products() {
   ).size;
 
 
-  // --------------------------------------------------
-  // Product form helpers
-  // --------------------------------------------------
+  // ------------------------------------------------
+  // Update form field
+  // ------------------------------------------------
 
   function updateForm(field, value) {
     setForm((previous) => ({
@@ -281,12 +421,18 @@ export default function Products() {
   }
 
 
+  // ------------------------------------------------
+  // Open Add Product modal
+  // ------------------------------------------------
+
   function openCreateProduct() {
     setEditingId(null);
 
     setEditingStockItemId(null);
 
-    setForm({ ...emptyForm });
+    setForm({
+      ...emptyForm,
+    });
 
     setFormError("");
 
@@ -294,12 +440,17 @@ export default function Products() {
   }
 
 
+  // ------------------------------------------------
+  // Open Edit Product modal
+  // ------------------------------------------------
+
   async function openEditProduct(product) {
     setError("");
 
     try {
-      // Prices belong to the internal variant,
-      // not the Product document.
+      // Prices remain stored in the internal
+      // ProductVariant document.
+
       const response = await inventoryApi.variants(
         token,
         product._id
@@ -319,9 +470,9 @@ export default function Products() {
       setEditingStockItemId(stockItem._id);
 
       setForm({
-        name: product.name,
+        name: product.name || "",
         brand: product.brand || "",
-        category: product.category,
+        category: product.category || "",
         description: product.description || "",
         imageUrl: product.imageUrl || "",
         retailPrice: priceForInput(
@@ -346,9 +497,34 @@ export default function Products() {
   }
 
 
-  // --------------------------------------------------
-  // Save product and prices
-  // --------------------------------------------------
+  // ------------------------------------------------
+  // Save recent brand and category
+  // ------------------------------------------------
+
+  function rememberProductEntries(brand, category) {
+    const savedBrand = brand.trim();
+
+    const savedCategory = category.trim();
+
+    saveRecentValue(
+      RECENT_BRAND_KEY,
+      savedBrand
+    );
+
+    saveRecentValue(
+      RECENT_CATEGORY_KEY,
+      savedCategory
+    );
+
+    setRecentBrand(savedBrand);
+
+    setRecentCategory(savedCategory);
+  }
+
+
+  // ------------------------------------------------
+  // Submit Add / Edit Product
+  // ------------------------------------------------
 
   async function submitProduct(event) {
     event.preventDefault();
@@ -358,7 +534,6 @@ export default function Products() {
     }
 
     setSaving(true);
-
     setFormError("");
 
     try {
@@ -380,26 +555,42 @@ export default function Products() {
               "Reference cost"
             );
 
+
+      // Validate product details
+
       if (!form.name.trim()) {
-        throw new Error("Enter the shoe name.");
+        throw new Error(
+          "Enter the product name."
+        );
       }
 
       if (!form.brand.trim()) {
-        throw new Error("Select a shoe brand.");
+        throw new Error(
+          "Enter the product brand."
+        );
       }
+
+      if (!form.category.trim()) {
+        throw new Error(
+          "Enter the product category."
+        );
+      }
+
 
       const productDetails = {
         name: form.name.trim(),
         brand: form.brand.trim(),
-        category: form.category,
+        category: form.category.trim(),
         description: form.description.trim(),
         imageUrl: form.imageUrl.trim(),
       };
 
-      if (editingId) {
-        // Update product details and pricing separately,
-        // using the endpoints that already exist.
 
+      // ----------------------------------------------
+      // Edit existing product
+      // ----------------------------------------------
+
+      if (editingId) {
         if (!editingStockItemId) {
           throw new Error(
             "The product's internal stock item is missing."
@@ -426,31 +617,50 @@ export default function Products() {
         );
 
       } else {
-        // Updated backend creates the Product and
-        // its single internal variant together.
 
-        const response = await inventoryApi.createProduct(
-          token,
-          {
-            ...productDetails,
-            retailPrice,
-            wholesalePrice,
-            referenceCost,
-          }
-        );
+        // --------------------------------------------
+        // Create new product
+        // --------------------------------------------
+
+        // The backend creates the Product
+        // and its one internal variant together.
+
+        const response =
+          await inventoryApi.createProduct(
+            token,
+            {
+              ...productDetails,
+              retailPrice,
+              wholesalePrice,
+              referenceCost,
+            }
+          );
 
         if (response.product?._id) {
-          setSelectedId(response.product._id);
+          setSelectedId(
+            response.product._id
+          );
         }
 
-        // Make the newly registered product visible
-        // even if the previous filters excluded it.
+        // Reset filters so the new product
+        // is visible in the catalogue.
+
         setSearch("");
 
         setCategory("");
 
         setPage(1);
       }
+
+
+      // ----------------------------------------------
+      // Remember recent entries only after success
+      // ----------------------------------------------
+
+      rememberProductEntries(
+        productDetails.brand,
+        productDetails.category
+      );
 
       setModal(false);
 
@@ -465,16 +675,20 @@ export default function Products() {
   }
 
 
-  // --------------------------------------------------
-  // Product interface
-  // --------------------------------------------------
+  // ==================================================
+  // RENDER
+  // ==================================================
 
   return (
     <div className="jbi-page">
 
+      {/* ============================================
+          PAGE HEADING
+      ============================================ */}
+
       <PageHead
         title="Products"
-        description="Manage JOHNBTRACO shoes, brands and selling prices."
+        description="Manage JOHNBTRACO products, brands, categories and selling prices."
         actions={
           admin && (
             <button
@@ -488,6 +702,10 @@ export default function Products() {
         }
       />
 
+
+      {/* ============================================
+          STATISTICS
+      ============================================ */}
 
       <div className="jbi-stats">
 
@@ -508,7 +726,7 @@ export default function Products() {
           icon={Coins}
           label="Pricing"
           value="Retail / Wholesale"
-          detail="Prices are managed per shoe"
+          detail="Prices are managed per product"
         />
 
         <StatCard
@@ -529,11 +747,15 @@ export default function Products() {
       />
 
 
+      {/* ============================================
+          PRODUCT TABLE AND DETAILS
+      ============================================ */}
+
       <div className="jbi-products-grid">
 
-        {/* Product list */}
-
         <section className="jbi-panel">
+
+          {/* Search and category filter */}
 
           <div className="jbi-toolbar">
 
@@ -543,34 +765,36 @@ export default function Products() {
                 setSearch(value);
                 setPage(1);
               }}
-              placeholder="Search shoe name or brand..."
+              placeholder="Search product name or brand..."
             />
 
-            <select
+            <input
               className="jbi-select"
+              type="text"
+              list="jbt-filter-categories"
               value={category}
               onChange={(event) => {
                 setCategory(event.target.value);
                 setPage(1);
               }}
-            >
-              <option value="">
-                All categories
-              </option>
+              placeholder="All categories"
+              maxLength={100}
+              autoComplete="off"
+            />
 
-              {categories.map((item) => (
+            <datalist id="jbt-filter-categories">
+              {categorySuggestions.map((item) => (
                 <option
                   key={item}
                   value={item}
-                >
-                  {item}
-                </option>
+                />
               ))}
-
-            </select>
+            </datalist>
 
           </div>
 
+
+          {/* Product listing */}
 
           {loading ? (
 
@@ -578,7 +802,7 @@ export default function Products() {
 
           ) : products.length === 0 ? (
 
-            <Empty text="No shoes found. Add a product to get started." />
+            <Empty text="No products found. Add a product to get started." />
 
           ) : (
 
@@ -610,34 +834,46 @@ export default function Products() {
                     >
 
                       <td>
+
                         <div className="jbi-product-cell">
 
                           {product.imageUrl ? (
+
                             <img
                               src={product.imageUrl}
                               alt={product.name}
                             />
+
                           ) : (
+
                             <span className="jbi-no-image">
                               <Boxes size={21} />
                             </span>
+
                           )}
 
                           <div>
-                            <strong>{product.name}</strong>
+                            <strong>
+                              {product.name}
+                            </strong>
 
                             <small>
                               {product.description ||
-                                "Shoe collection"}
+                                "product collection"}
                             </small>
                           </div>
 
                         </div>
+
                       </td>
 
-                      <td>{product.category}</td>
+                      <td>
+                        {product.category}
+                      </td>
 
-                      <td>{product.brand || "—"}</td>
+                      <td>
+                        {product.brand || "—"}
+                      </td>
 
                       <td>
                         <span className="jbi-pill green">
@@ -650,6 +886,7 @@ export default function Products() {
                         <div className="jbi-inline">
 
                           <button
+                            type="button"
                             className="jbi-inline-action"
                             title="View product"
                             onClick={() => {
@@ -662,6 +899,7 @@ export default function Products() {
                           {admin && (
 
                             <button
+                              type="button"
                               className="jbi-inline-action"
                               title="Edit product"
                               onClick={() => {
@@ -701,7 +939,9 @@ export default function Products() {
         </section>
 
 
-        {/* Product details */}
+        {/* ==========================================
+            PRODUCT DETAILS
+        ========================================== */}
 
         <aside className="jbi-detail jbi-product-detail">
 
@@ -709,7 +949,7 @@ export default function Products() {
 
           {!selectedProduct ? (
 
-            <Empty text="Select a shoe to view its details." />
+            <Empty text="Select a product to view its details." />
 
           ) : (
 
@@ -732,13 +972,17 @@ export default function Products() {
               )}
 
 
-              <h3>{selectedProduct.name}</h3>
+              <h3>
+                {selectedProduct.name}
+              </h3>
+
 
               <p className="jbi-muted">
                 {selectedProduct.category}
                 {" · "}
                 {selectedProduct.brand || "Unbranded"}
               </p>
+
 
               <p className="jbi-detail-description">
                 {selectedProduct.description ||
@@ -753,21 +997,27 @@ export default function Products() {
                   <div>
                     <span>Retail Price</span>
                     <strong>
-                      {cedis(productStockItem.retailPrice)}
+                      {cedis(
+                        productStockItem.retailPrice
+                      )}
                     </strong>
                   </div>
 
                   <div>
                     <span>Wholesale Price</span>
                     <strong>
-                      {cedis(productStockItem.wholesalePrice)}
+                      {cedis(
+                        productStockItem.wholesalePrice
+                      )}
                     </strong>
                   </div>
 
                   <div>
                     <span>Reference Cost</span>
                     <strong>
-                      {cedis(productStockItem.referenceCost)}
+                      {cedis(
+                        productStockItem.referenceCost
+                      )}
                     </strong>
                   </div>
 
@@ -785,6 +1035,7 @@ export default function Products() {
               {admin && (
 
                 <button
+                  type="button"
                   className="jbi-button gold jbi-detail-btn"
                   onClick={() => {
                     openEditProduct(selectedProduct);
@@ -805,7 +1056,9 @@ export default function Products() {
       </div>
 
 
-      {/* Add / Edit Product Modal */}
+      {/* ============================================
+          ADD / EDIT PRODUCT MODAL
+      ============================================ */}
 
       {modal && (
 
@@ -813,7 +1066,7 @@ export default function Products() {
           title={
             editingId
               ? "Edit Product"
-              : "Add New Shoe"
+              : "Add New Product"
           }
           onClose={() => {
             if (!saving) {
@@ -827,9 +1080,13 @@ export default function Products() {
             onSubmit={submitProduct}
           >
 
+            {/* --------------------------------------
+                product name
+            -------------------------------------- */}
+
             <div className="jbi-field">
 
-              <label>Shoe name</label>
+              <label>product name</label>
 
               <input
                 required
@@ -837,7 +1094,10 @@ export default function Products() {
                 maxLength={150}
                 value={form.name}
                 onChange={(event) => {
-                  updateForm("name", event.target.value);
+                  updateForm(
+                    "name",
+                    event.target.value
+                  );
                 }}
                 placeholder="e.g. Horsebit Loafer"
               />
@@ -845,45 +1105,50 @@ export default function Products() {
             </div>
 
 
+            {/* --------------------------------------
+                Typable Brand and Category
+            -------------------------------------- */}
+
             <div className="jbi-form-grid">
 
               <div className="jbi-field">
 
                 <label>Brand</label>
 
-                <select
+                <input
                   required
+                  type="text"
+                  list="jbt-brand-suggestions"
+                  maxLength={100}
                   value={form.brand}
                   onChange={(event) => {
-                    updateForm("brand", event.target.value);
+                    updateForm(
+                      "brand",
+                      event.target.value
+                    );
                   }}
-                >
+                  placeholder="Type or select a brand"
+                  autoComplete="off"
+                />
 
-                  <option value="">
-                    Select a brand
-                  </option>
+                <datalist id="jbt-brand-suggestions">
 
-                  {form.brand &&
-                    !brands.includes(form.brand) && (
-
-                      <option value={form.brand}>
-                        {form.brand}
-                      </option>
-
-                    )}
-
-                  {brands.map((brand) => (
-
+                  {brandSuggestions.map((brand) => (
                     <option
                       key={brand}
                       value={brand}
-                    >
-                      {brand}
-                    </option>
-
+                    />
                   ))}
 
-                </select>
+                </datalist>
+
+                {recentBrand && (
+
+                  <small className="jbi-muted">
+                    Recently entered: {recentBrand}
+                  </small>
+
+                )}
 
               </div>
 
@@ -892,7 +1157,11 @@ export default function Products() {
 
                 <label>Category</label>
 
-                <select
+                <input
+                  required
+                  type="text"
+                  list="jbt-category-suggestions"
+                  maxLength={100}
                   value={form.category}
                   onChange={(event) => {
                     updateForm(
@@ -900,27 +1169,37 @@ export default function Products() {
                       event.target.value
                     );
                   }}
-                >
+                  placeholder="Type or select a category"
+                  autoComplete="off"
+                />
 
-                  {categories.map((item) => (
+                <datalist id="jbt-category-suggestions">
 
+                  {categorySuggestions.map((item) => (
                     <option
                       key={item}
                       value={item}
-                    >
-                      {item}
-                    </option>
-
+                    />
                   ))}
 
-                </select>
+                </datalist>
+
+                {recentCategory && (
+
+                  <small className="jbi-muted">
+                    Recently entered: {recentCategory}
+                  </small>
+
+                )}
 
               </div>
 
             </div>
 
 
-            {/* Selling prices */}
+            {/* --------------------------------------
+                Selling prices
+            -------------------------------------- */}
 
             <div className="jbi-form-grid">
 
@@ -992,12 +1271,15 @@ export default function Products() {
 
 
             <p className="jbi-hint">
-              Reference cost is an estimate. Actual
-              inventory cost is recorded when stock is added.
+              Reference cost is an estimate.
+              Actual inventory cost is recorded
+              when stock is added.
             </p>
 
 
-            {/* Image URL */}
+            {/* --------------------------------------
+                Image URL
+            -------------------------------------- */}
 
             <div className="jbi-field">
 
@@ -1018,7 +1300,9 @@ export default function Products() {
             </div>
 
 
-            {/* Description */}
+            {/* --------------------------------------
+                Description
+            -------------------------------------- */}
 
             <div className="jbi-field">
 
@@ -1039,7 +1323,9 @@ export default function Products() {
             </div>
 
 
-            {/* Product status */}
+            {/* --------------------------------------
+                Product status
+            -------------------------------------- */}
 
             {editingId && (
 
@@ -1072,8 +1358,16 @@ export default function Products() {
             )}
 
 
+            {/* --------------------------------------
+                Form error
+            -------------------------------------- */}
+
             <ErrorNotice error={formError} />
 
+
+            {/* --------------------------------------
+                Form actions
+            -------------------------------------- */}
 
             <div className="jbi-form-footer">
 

@@ -114,13 +114,13 @@ export default function NewSale({ token, admin, branches, preferredBranchId, ass
   function addItem() {
     setError("");
     if (!productId || variantLoading) {
-      setError("Select a shoe and allow its pricing to load.");
+      setError("Select a product and allow its pricing to load.");
       return;
     }
 
-    // The simplified catalog must have exactly one internal variant per shoe.
+    // The simplified catalog must have exactly one internal variant per product.
     if (variants.length !== 1) {
-      setError("This shoe does not have exactly one stock item. Contact the administrator.");
+      setError("This product does not have exactly one stock item. Contact the administrator.");
       return;
     }
 
@@ -142,7 +142,7 @@ export default function NewSale({ token, admin, branches, preferredBranchId, ass
     }
 
     if (lines.some((line) => line.variantId === variantId)) {
-      setError("This shoe is already in the sale. Remove it first to change the quantity or price type.");
+      setError("This product is already in the sale. Remove it first to change the quantity or price type.");
       return;
     }
 
@@ -150,7 +150,7 @@ export default function NewSale({ token, admin, branches, preferredBranchId, ass
 
     setLines((items) => [...items, {
       variantId,
-      productName: products.find((item) => item._id === productId)?.name || "Shoe",
+      productName: products.find((item) => item._id === productId)?.name || "product",
       quantity: count,
       priceType,
       unitPrice: price,
@@ -165,7 +165,7 @@ export default function NewSale({ token, admin, branches, preferredBranchId, ass
 
     try {
       if (admin && !branchId) throw new Error("Select the selling branch.");
-      if (!lines.length) throw new Error("Add at least one shoe to the sale.");
+      if (!lines.length) throw new Error("Add at least one product to the sale.");
 
       // Recheck availability in case another sale changed stock while this dialog was open.
       const latestStock = await fetchBranchStock(token, branchId);
@@ -249,16 +249,16 @@ export default function NewSale({ token, admin, branches, preferredBranchId, ass
           </label>
         </div>
 
-        <PanelHeading text="Add shoes" />
+        <PanelHeading text="Add products" />
         {branchId && !stockLoading && products.length === 0 && (
-          <p className="jbc-footnote">No shoes with available stock in the selected branch.</p>
+          <p className="jbc-footnote">No products with available stock in the selected branch.</p>
         )}
         <div className="jbc-form-grid">
 
           <label className="jbc-field">
             Product
             <select value={productId} onChange={(event) => setProductId(event.target.value)}>
-              <option value="">{stockLoading ? "Loading branch inventory..." : "Select shoe"}</option>
+              <option value="">{stockLoading ? "Loading branch inventory..." : "Select product"}</option>
               {availableProducts.map((product) => <option key={product._id} value={product._id}>{product.brand ? `${product.brand} · ` : ""}{product.name}</option>)}
             </select>
           </label>
@@ -274,7 +274,7 @@ export default function NewSale({ token, admin, branches, preferredBranchId, ass
             <input type="number" min="1" step="1" value={quantity} onChange={(event) => setQuantity(event.target.value)} />
           </label>
           <div className="jbc-field" style={{ justifyContent: "end" }}>
-            <button type="button" className="jbc-btn gold" disabled={!productId || variantLoading || stockLoading} onClick={addItem}><Plus size={16} /> {variantLoading ? "Loading shoe..." : "Add to sale"}</button>
+            <button type="button" className="jbc-btn gold" disabled={!productId || variantLoading || stockLoading} onClick={addItem}><Plus size={16} /> {variantLoading ? "Loading product..." : "Add to sale"}</button>
           </div>
         </div>
 
@@ -286,7 +286,7 @@ export default function NewSale({ token, admin, branches, preferredBranchId, ass
                 <td>{line.productName}</td>
                 <td>{line.priceType}</td><td>{line.quantity}</td><td>{money(line.unitPrice)}</td>
                 <td>{money(line.unitPrice * line.quantity)}</td>
-                <td><button type="button" className="jbc-mini" aria-label="Remove shoe" onClick={() => setLines((current) => current.filter((item) => item.variantId !== line.variantId))}><Trash2 size={15} /></button></td>
+                <td><button type="button" className="jbc-mini" aria-label="Remove product" onClick={() => setLines((current) => current.filter((item) => item.variantId !== line.variantId))}><Trash2 size={15} /></button></td>
               </tr>
             ))}</tbody>
           </table>
@@ -313,7 +313,7 @@ function PanelHeading({ text }) {
 }
 
 // GET /api/inventory is paginated. Read every page rather than dropping
-// sellable shoes that happen not to be on the first page.
+// sellable products that happen not to be on the first page.
 async function fetchBranchStock(token, branchId, signal) {
   if (!branchId) return [];
 

@@ -141,7 +141,7 @@ export default function StockMovements() {
         {admin && <select className="jbi-select" value={branchId} onChange={(event) => { setBranchId(event.target.value); setPage(1); }}>
           {branches.map((branch) => <option key={branch._id} value={branch._id}>{branch.name}</option>)}
         </select>}
-        <SearchInput value={search} onChange={setSearch} placeholder="Filter displayed movements by shoe, reason or staff..." />
+        <SearchInput value={search} onChange={setSearch} placeholder="Filter displayed movements by product, reason or staff..." />
         <select className="jbi-select" value={type} onChange={(event) => setType(event.target.value)}>
           <option value="">All movement types</option>
           {Object.entries(typeNames).map(([value, name]) => <option value={value} key={value}>{name}</option>)}

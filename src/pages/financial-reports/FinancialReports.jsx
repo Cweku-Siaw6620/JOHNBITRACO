@@ -82,7 +82,7 @@ export default function FinancialReports() {
           <div className="jbf-grid">
             <FinanceCard label="Sales revenue" value={money(performance.revenue)} help={`${performance.salesCount || 0} transactions in period`} />
             <FinanceCard label="Cost of goods sold" value={money(performance.costOfGoodsSold)} help="Historical stock cost" />
-            <FinanceCard label="Gross profit" value={money(performance.grossProfit)} help="Revenue less cost of shoes sold" />
+            <FinanceCard label="Gross profit" value={money(performance.grossProfit)} help="Revenue less cost of products sold" />
             <FinanceCard label="Operating expenses" value={money(performance.operatingExpenses)} help="Posted expenses in period" />
             <FinanceCard label="Operating result" value={money(performance.netOperatingResult)} help="Gross profit less operating expenses" />
             <FinanceCard label="Customer payments received" value={money(payments.customerPaymentsReceived)} help="Received during selected period" />
