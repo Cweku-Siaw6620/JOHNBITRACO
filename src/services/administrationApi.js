@@ -1,4 +1,4 @@
-const BASE_URL = (import.meta.env.VITE_API_HOSTED_URL || "http://localhost:5000" ).replace(/\/$/, "");
+const BASE_URL = (import.meta.env.VITE_API_LOCAL_URL || "http://localhost:5000" ).replace(/\/$/, "");
 
 async function request(path, token, options = {}) {
   const { method = "GET", body, signal } = options;
@@ -28,6 +28,8 @@ export const administrationApi = {
   branches: (token, signal) => request("/api/branches", token, { signal }),
 
   addBranch: (token, body) => request("/api/branches", token, { method: "POST", body }),
+
+  deleteBranch: (token, id) => request(`/api/branches/${encodeURIComponent(id)}`, token, { method: "DELETE" }),
 
   staff: (token, signal) => request("/api/users", token, { signal }),
 

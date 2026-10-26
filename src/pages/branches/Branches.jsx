@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Building2, Plus, RefreshCw } from "lucide-react";
+import { Building2, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useAuth } from "../login/features/AuthProvider";
 import { administrationApi } from "../../services/administrationApi";
 import { AdminMessage, AdminModal, AdminPageHeader, AdminStat } from "../../components/administration/AdminUI";
@@ -20,6 +20,9 @@ export default function Branches() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [refresh, setRefresh] = useState(0);
+  const [branchToDelete, setBranchToDelete] = useState(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!token || !isAdmin) {
@@ -73,6 +76,26 @@ export default function Branches() {
       setError(err.message);
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function deleteBranch() {
+    if (!branchToDelete || deleting || deleteConfirmation !== branchToDelete.code) return;
+
+    setDeleting(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      await administrationApi.deleteBranch(token, branchToDelete._id);
+      setBranchToDelete(null);
+      setDeleteConfirmation("");
+      setSuccess("Branch and its associated records permanently deleted.");
+      setRefresh((value) => value + 1);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -136,6 +159,7 @@ export default function Branches() {
                   <th>Branch code</th>
                   <th>Status</th>
                   <th>Date registered</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
 
@@ -150,6 +174,23 @@ export default function Branches() {
                       </span>
                     </td>
                     <td>{branch.createdAt ? new Date(branch.createdAt).toLocaleDateString("en-GB") : "—"}</td>
+                    <td>
+                      {branch.code !== "MAIN" && (
+                        <button
+                          type="button"
+                          className="jba-secondary"
+                          disabled={deleting}
+                          onClick={() => {
+                            setError("");
+                            setSuccess("");
+                            setDeleteConfirmation("");
+                            setBranchToDelete(branch);
+                          }}
+                        >
+                          <Trash2 size={16} color="#B42318" /> Delete
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -157,6 +198,46 @@ export default function Branches() {
           </div>
         )}
       </section>
+
+      {branchToDelete && (
+        <AdminModal
+          title="Permanently Delete Branch"
+          onClose={() => { if (!deleting) setBranchToDelete(null); }}
+        >
+          <div className="jba-form">
+            <p>
+              Delete <strong>{branchToDelete.name}</strong> and its assigned staff,
+              sessions, inventory, movements, sales, payments, purchases and expenses?
+            </p>
+            <p className="jba-note">
+              This is a permanent deletion. Products, customers and suppliers shared
+              with other branches will remain.
+            </p>
+            <label className="jba-field">
+              Type the branch code <strong>{branchToDelete.code}</strong> to confirm
+              <input
+                className="jba-input"
+                value={deleteConfirmation}
+                onChange={(event) => setDeleteConfirmation(event.target.value.toUpperCase())}
+                autoComplete="off"
+                disabled={deleting}
+              />
+            </label>
+            <AdminMessage message={error} />
+            <div className="jba-form-actions">
+              <button type="button" className="jba-secondary" disabled={deleting} onClick={() => setBranchToDelete(null)}>Cancel</button>
+              <button
+                type="button"
+                className="jba-primary"
+                disabled={deleting || deleteConfirmation !== branchToDelete.code}
+                onClick={deleteBranch}
+              >
+                {deleting ? "Deleting..." : "Permanently Delete"}
+              </button>
+            </div>
+          </div>
+        </AdminModal>
+      )}
 
       {dialogOpen && (
         <AdminModal title="Register New Branch" onClose={() => setDialogOpen(false)}>

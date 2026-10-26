@@ -362,38 +362,50 @@ export default function Products() {
   // Load internal product stock item
   // ------------------------------------------------
 
-  useEffect(() => {
-    if (!token || !selectedId) {
-      setProductStockItem(null);
-      return;
-    }
-
-    const controller = new AbortController();
-
+useEffect(() => {
+  if (!token || !selectedId) {
     setProductStockItem(null);
+    return;
+  }
 
-    inventoryApi
-      .variants(
-        token,
-        selectedId,
-        controller.signal
-      )
-      .then((response) => {
-        if (!controller.signal.aborted) {
-          setProductStockItem(
-            response.variants?.[0] || null
-          );
-        }
-      })
-      .catch((err) => {
-        if (err.name !== "AbortError") {
-          setError(err.message);
-        }
-      });
+  // Clear the previous product's pricing immediately.
+  setProductStockItem(null);
 
-    return () => controller.abort();
+  const controller = new AbortController();
 
-  }, [token, selectedId, refresh]);
+  inventoryApi
+    .variants(token, selectedId, controller.signal)
+    .then((response) => {
+      if (!controller.signal.aborted) {
+        setProductStockItem(
+          response.variants?.[0] || null
+        );
+      }
+    })
+    .catch((err) => {
+      if (err.name === "AbortError") {
+        return;
+      }
+
+      // Inactive products cannot be queried through
+      // the active-only variants endpoint.
+      // Refresh the catalogue rather than displaying
+      // a misleading pricing error.
+      if (
+        err.status === 404 ||
+        err.statusCode === 404
+      ) {
+        setProductStockItem(null);
+        setRefresh((previous) => previous + 1);
+        return;
+      }
+
+      setError(err.message);
+    });
+
+  return () => controller.abort();
+
+}, [token, selectedId]);
 
 
   // ------------------------------------------------

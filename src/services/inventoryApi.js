@@ -1,4 +1,4 @@
-const BASE_URL = (import.meta.env.VITE_API_HOSTED_URL || "http://localhost:5000" ).replace(/\/$/, "");
+const BASE_URL = (import.meta.env.VITE_API_LOCAL_URL || "http://localhost:5000" ).replace(/\/$/, "");
 
 async function request(path, token, options = {}) {
   const { signal, method = "GET", body } = options;
@@ -78,4 +78,7 @@ export const inventoryApi = {
 
   movements: (token, filters, signal) =>
     request(`/api/inventory/movements${queryString(filters)}`, token, { signal }),
+
+  deleteStock: (token, id) =>
+    request(`/api/inventory/${encodeURIComponent(id)}`, token, { method: "DELETE" }),
 };

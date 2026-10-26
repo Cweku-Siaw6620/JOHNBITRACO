@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Boxes, AlertTriangle, CircleX, Coins, Plus, SlidersHorizontal, Eye } from "lucide-react";
+import { Boxes, AlertTriangle, CircleX, Coins, Plus, SlidersHorizontal, Eye, Trash2 } from "lucide-react";
 import { useAuth } from "../login/features/AuthProvider";
 import { inventoryApi } from "../../services/inventoryApi";
 import {
@@ -29,6 +29,10 @@ export default function Inventory() {
   const [category, setCategory] = useState("");
   const [lowOnly, setLowOnly] = useState(false);
   const [selected, setSelected] = useState(null);
+  const [stockToDelete, setStockToDelete] = useState(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({ variantId: "", quantity: "", quantityChange: "", unitCost: "", lowStockThreshold: 5, reason: "" });
   const [productId, setProductId] = useState("");
@@ -190,6 +194,40 @@ export default function Inventory() {
     }
   }
 
+  function confirmDelete(stock) {
+    if (!admin) return;
+    setStockToDelete(stock);
+    setDeleteConfirmation("");
+    setDeleteError("");
+  }
+
+  async function deleteStockRecord() {
+    if (!admin || !stockToDelete || deleting) return;
+    if (deleteConfirmation !== "DELETE") {
+      setDeleteError('Type DELETE to confirm.');
+      return;
+    }
+
+    setDeleting(true);
+    setDeleteError("");
+
+    try {
+      await inventoryApi.deleteStock(token, stockToDelete._id);
+      if (selected?._id === stockToDelete._id) setSelected(null);
+      setStockToDelete(null);
+      setDeleteConfirmation("");
+      if (inventory.length === 1 && page > 1) {
+        setPage((current) => current - 1);
+      } else {
+        setRefresh((value) => value + 1);
+      }
+    } catch (err) {
+      setDeleteError(err.message);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   const positiveChange = Number(form.quantityChange) > 0;
 
   return <div className="jbi-page">
@@ -238,7 +276,8 @@ export default function Inventory() {
               <td>{cedis(stock.inventoryValue)}</td>
               <td><span className={`jbi-pill ${tone}`}>{status}</span></td>
               <td><div className="jbi-inline"><button className="jbi-inline-action" title="View details" onClick={() => setSelected(stock)}><Eye size={16} /></button>
-                {admin && <button className="jbi-inline-action" title="Adjust stock" onClick={() => openModal("adjustment", stock)}><SlidersHorizontal size={16} /></button>}</div></td>
+                {admin && <button className="jbi-inline-action" title="Adjust stock" onClick={() => openModal("adjustment", stock)}><SlidersHorizontal size={16} /></button>}
+                 {admin && <button type="button" className="jbi-inline-action" title="Permanently delete inventory record" onClick={() => confirmDelete(stock)}><Trash2 size={16} color="#B42318" /></button>}</div></td>
             </tr>;
           })}</tbody>
         </table>
@@ -254,6 +293,38 @@ export default function Inventory() {
       <span>Valuation: {cedis(selected.inventoryValue)}</span>
       <button className="jbi-button" onClick={() => setSelected(null)}>Close</button>
     </section>}
+
+    {stockToDelete && (
+      <Modal title="Permanently Delete Inventory" onClose={() => { if (!deleting) setStockToDelete(null); }}>
+        <div className="jbi-form">
+          <p>
+            Delete <strong>{stockToDelete.variant?.product?.name || "this shoe"}</strong>
+            {" "}from <strong>{branches.find((branch) => branch._id === branchId)?.name || "this branch"}</strong>?
+          </p>
+          <p className="jbi-hint">
+            This permanently removes this branch's stock record ({stockToDelete.quantity} pairs).
+            The shoe catalogue and other branches remain unchanged. Existing stock movement history is retained.
+          </p>
+          <div className="jbi-field">
+            <label>Type DELETE to confirm</label>
+            <input
+              value={deleteConfirmation}
+              onChange={(event) => setDeleteConfirmation(event.target.value.toUpperCase())}
+              disabled={deleting}
+              autoComplete="off"
+              placeholder="DELETE"
+            />
+          </div>
+          <ErrorNotice error={deleteError} />
+          <div className="jbi-form-footer">
+            <button type="button" className="jbi-button" disabled={deleting} onClick={() => setStockToDelete(null)}>Cancel</button>
+            <button type="button" className="jbi-button burgundy" disabled={deleting || deleteConfirmation !== "DELETE"} onClick={deleteStockRecord}>
+              {deleting ? "Deleting..." : "Permanently Delete"}
+            </button>
+          </div>
+        </div>
+      </Modal>
+    )}
 
     {modal && <Modal title={modal === "opening" ? "Register Opening Stock" : "Adjust Branch Stock"} onClose={() => setModal(null)}>
       <form className="jbi-form" onSubmit={submit}>
