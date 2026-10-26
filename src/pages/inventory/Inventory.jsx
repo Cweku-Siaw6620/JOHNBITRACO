@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Boxes, AlertTriangle, CircleX, Coins, Plus, SlidersHorizontal, Eye } from "lucide-react";
 import { useAuth } from "../login/features/AuthProvider";
 import { inventoryApi } from "../../services/inventoryApi";
@@ -19,7 +19,6 @@ export default function Inventory() {
   const token = session?.token;
   const role = session?.user?.role;
   const admin = role === "admin";
-  const writable = role === "admin";
 
   const [branches, setBranches] = useState([]);
   const [branchId, setBranchId] = useState(branchIdOf(session?.user?.branch));
@@ -34,7 +33,7 @@ export default function Inventory() {
   const [form, setForm] = useState({ variantId: "", quantity: "", quantityChange: "", unitCost: "", lowStockThreshold: 5, reason: "" });
   const [productId, setProductId] = useState("");
   const [productChoices, setProductChoices] = useState([]);
-  const [variantChoices, setVariantChoices] = useState([]);
+  const [resolvingProduct, setResolvingProduct] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -95,11 +94,11 @@ export default function Inventory() {
   const displayedBranch = branches.find((item) => item._id === branchId);
 
   async function openModal(type, stock = null) {
+    if (!admin) return;
     setModal(type);
     setFormError("");
     setSelected(stock);
     setProductId("");
-    setVariantChoices([]);
     setForm({
       variantId: stock?.variant?._id || "",
       quantity: "",
@@ -122,23 +121,44 @@ export default function Inventory() {
   async function selectProduct(id) {
     setProductId(id);
     setForm((current) => ({ ...current, variantId: "" }));
-    setVariantChoices([]);
+    setFormError("");
+
     if (!id) return;
 
+    setResolvingProduct(true);
+
     try {
+      // Internal ID only: the user never needs to choose a size, color, or SKU.
       const result = await inventoryApi.variants(token, id);
-      setVariantChoices(result.variants || []);
+      const available = (result.variants || []).filter((item) => item.isActive !== false);
+
+      if (available.length !== 1) {
+        throw new Error(
+          available.length === 0
+            ? "This product has no active stock item."
+            : "This product has multiple stock items. Please reconcile it before adding stock."
+        );
+      }
+
+      setForm((current) => ({ ...current, variantId: available[0]._id }));
     } catch (err) {
       setFormError(err.message);
+    } finally {
+      setResolvingProduct(false);
     }
   }
 
   async function submit(event) {
     event.preventDefault();
+    if (!admin || saving || resolvingProduct) return;
     setSaving(true);
     setFormError("");
 
     try {
+      if (!form.variantId) {
+        throw new Error("Select a product with an available stock item.");
+      }
+
       const common = {
         branchId,
         variantId: form.variantId,
@@ -175,7 +195,7 @@ export default function Inventory() {
   return <div className="jbi-page">
     <PageHead title="Inventory" description="View branch stock, low-stock items and adjustments." actions={<>
       {admin && <button className="jbi-button gold" disabled={!branchId} onClick={() => openModal("opening")}><Plus size={17} /> Opening Stock</button>}
-      {writable && <button className="jbi-button burgundy" disabled={!branchId} onClick={() => openModal("adjustment")}><SlidersHorizontal size={17} /> Adjust Stock</button>}
+      {admin && <button className="jbi-button burgundy" disabled={!branchId} onClick={() => openModal("adjustment")}><SlidersHorizontal size={17} /> Adjust Stock</button>}
     </>} />
 
     <div className="jbi-stats">
@@ -193,7 +213,7 @@ export default function Inventory() {
           {branches.map((branch) => <option key={branch._id} value={branch._id}>{branch.name}</option>)}
         </select>}
         {!admin && <span className="jbi-branch-label">{displayedBranch?.name || "My assigned branch"}</span>}
-        <SearchInput value={search} onChange={(value) => { setSearch(value); setPage(1); }} placeholder="Search product, SKU, size or color..." />
+        <SearchInput value={search} onChange={(value) => { setSearch(value); setPage(1); }} placeholder="Search shoe name or brand..." />
         <select className="jbi-select" value={category} onChange={(event) => { setCategory(event.target.value); setPage(1); }}>
           <option value="">All categories</option>
           {categories.map((item) => <option key={item}>{item}</option>)}
@@ -203,7 +223,7 @@ export default function Inventory() {
 
       {!branchId ? <Empty text="No assigned branch found." /> : loading ? <Loading /> : inventory.length === 0 ? <Empty text="No inventory records match your filters." /> : <div className="jbi-table-scroll">
         <table className="jbi-table">
-          <thead><tr><th>Product</th><th>Category</th><th>Size</th><th>Color</th><th>SKU</th><th>Quantity</th><th>Threshold</th><th>Stock Value</th><th>Status</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Product</th><th>Category</th><th>Quantity</th><th>Threshold</th><th>Stock Value</th><th>Status</th><th>Actions</th></tr></thead>
           <tbody>{inventory.map((stock) => {
             const variant = stock.variant || {};
             const product = variant.product || {};
@@ -213,15 +233,12 @@ export default function Inventory() {
             return <tr key={stock._id} className={selected?._id === stock._id ? "is-selected" : ""}>
               <td><strong>{product.name || "Unknown shoe"}</strong><span className="jbi-subtext">{product.brand || ""}</span></td>
               <td>{product.category || "—"}</td>
-              <td>{variant.size || "—"}</td>
-              <td>{variant.color || "—"}</td>
-              <td>{variant.sku || "—"}</td>
               <td><strong>{stock.quantity}</strong></td>
               <td>{stock.lowStockThreshold}</td>
               <td>{cedis(stock.inventoryValue)}</td>
               <td><span className={`jbi-pill ${tone}`}>{status}</span></td>
               <td><div className="jbi-inline"><button className="jbi-inline-action" title="View details" onClick={() => setSelected(stock)}><Eye size={16} /></button>
-                {writable && <button className="jbi-inline-action" title="Adjust stock" onClick={() => openModal("adjustment", stock)}><SlidersHorizontal size={16} /></button>}</div></td>
+                {admin && <button className="jbi-inline-action" title="Adjust stock" onClick={() => openModal("adjustment", stock)}><SlidersHorizontal size={16} /></button>}</div></td>
             </tr>;
           })}</tbody>
         </table>
@@ -232,8 +249,7 @@ export default function Inventory() {
 
     {selected && !modal && <section className="jbi-panel jbi-selected-stock">
       <strong>{selected.variant?.product?.name || "Selected stock"}</strong>
-      <span>SKU: {selected.variant?.sku || "—"}</span>
-      <span>Size: {selected.variant?.size} · {selected.variant?.color}</span>
+      <span>Brand: {selected.variant?.product?.brand || "—"}</span>
       <span>Available: {selected.quantity} pairs</span>
       <span>Valuation: {cedis(selected.inventoryValue)}</span>
       <button className="jbi-button" onClick={() => setSelected(null)}>Close</button>
@@ -244,9 +260,9 @@ export default function Inventory() {
         <p className="jbi-hint">Branch: <strong>{displayedBranch?.name || "Assigned branch"}</strong>. Quantity changes and audit movements are recorded by the backend.</p>
         {!selected && <>
           <div className="jbi-field"><label>Product</label><select required value={productId} onChange={(event) => selectProduct(event.target.value)}><option value="">Select product</option>{productChoices.map((item) => <option key={item._id} value={item._id}>{item.name}</option>)}</select></div>
-          <div className="jbi-field"><label>Size / Color / SKU</label><select required value={form.variantId} onChange={(event) => setForm({ ...form, variantId: event.target.value })}><option value="">Select variant</option>{variantChoices.map((item) => <option key={item._id} value={item._id}>{item.size} · {item.color} · {item.sku}</option>)}</select></div>
+          {resolvingProduct && <p className="jbi-hint">Loading product stock details...</p>}
         </>}
-        {selected && <p className="jbi-hint">{selected.variant?.sku} — currently {selected.quantity} pairs.</p>}
+        {selected && <p className="jbi-hint">{selected.variant?.product?.name || "Selected shoe"} — currently {selected.quantity} pairs.</p>}
         {modal === "opening" ? <div className="jbi-form-grid">
           <div className="jbi-field"><label>Opening quantity</label><input required type="number" min="1" step="1" value={form.quantity} onChange={(event) => setForm({ ...form, quantity: event.target.value })} /></div>
           <div className="jbi-field"><label>Actual cost per pair (GH₵)</label><input required type="number" min="0" step="0.01" value={form.unitCost} onChange={(event) => setForm({ ...form, unitCost: event.target.value })} /></div>
@@ -257,7 +273,7 @@ export default function Inventory() {
         </>}
         <div className="jbi-field"><label>Reason</label><textarea required minLength={5} maxLength={500} rows={3} value={form.reason} onChange={(event) => setForm({ ...form, reason: event.target.value })} placeholder="Explain the stock transaction" /></div>
         <ErrorNotice error={formError} />
-        <div className="jbi-form-footer"><button type="button" className="jbi-button" onClick={() => setModal(null)}>Cancel</button><button disabled={saving} className="jbi-button burgundy">{saving ? "Saving..." : "Confirm"}</button></div>
+        <div className="jbi-form-footer"><button type="button" className="jbi-button" onClick={() => setModal(null)}>Cancel</button><button disabled={saving || resolvingProduct || !form.variantId} className="jbi-button burgundy">{saving ? "Saving..." : "Confirm"}</button></div>
       </form>
     </Modal>}
   </div>;

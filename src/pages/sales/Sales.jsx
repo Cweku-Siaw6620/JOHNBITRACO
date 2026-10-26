@@ -84,8 +84,8 @@ export default function Sales() {
     return (data.sales || []).filter((sale) => {
       const customer = sale.customer?.name || "Walk-in customer";
       const branch = sale.branch?.name || "";
-      const sku = (sale.items || []).map((item) => item.sku).join(" ");
-      const text = [sale._id, customer, branch, sku].join(" ").toLowerCase();
+      const productNames = (sale.items || []).map((item) => item.productName || "").join(" ");
+      const text = [sale._id, customer, branch, productNames].join(" ").toLowerCase();
 
       return !term || text.includes(term);
     });
@@ -96,11 +96,11 @@ export default function Sales() {
       <Header
         title="Sales"
         description="Review daily sales and transaction history across branches."
-        actions={(
+        actions={session?.user?.role !== "employee" ? (
           <button className="jbc-btn gold" onClick={() => setNewSaleOpen(true)}>
             <Plus size={17} /> New Sale
           </button>
-        )}
+        ) : null}
       />
 
       <div className="jbc-toolbar">
@@ -200,9 +200,9 @@ export default function Sales() {
           <p><strong>Branch:</strong> {selected.branch?.name || "Assigned branch"}</p>
           <div className="jbc-table-wrap">
             <table className="jbc-table">
-              <thead><tr><th>Product</th><th>SKU</th><th>Size</th><th>Color</th><th>Qty</th><th>Price</th><th>Line total</th></tr></thead>
+              <thead><tr><th>Product</th><th>Qty</th><th>Price</th><th>Line total</th></tr></thead>
               <tbody>{(selected.items || []).map((item) => (
-                <tr key={item.sku}><td>{item.productName}</td><td>{item.sku}</td><td>{item.size}</td><td>{item.color}</td><td>{item.quantity}</td><td>{money(item.unitPrice)}</td><td>{money(item.lineTotal)}</td></tr>
+                <tr key={item._id || `${item.variant}-${item.productName}-${item.quantity}`}><td>{item.productName}</td><td>{item.quantity}</td><td>{money(item.unitPrice)}</td><td>{money(item.lineTotal)}</td></tr>
               ))}</tbody>
             </table>
           </div>

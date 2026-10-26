@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { salesApi } from "../../../services/salesApi";
+import { inventoryApi } from "../../../services/inventoryApi";
 import { Dialog, money, Notice, toPesewas } from "../../commerce/components/CommerceUI";
 
 export default function NewSale({ token, admin, branches, preferredBranchId, assignedBranchId, onClose, onSaved }) {
@@ -10,9 +11,11 @@ export default function NewSale({ token, admin, branches, preferredBranchId, ass
   const [customerId, setCustomerId] = useState("");
   const [productSearch, setProductSearch] = useState("");
   const [products, setProducts] = useState([]);
+  const [branchStock, setBranchStock] = useState([]);
+  const [stockLoading, setStockLoading] = useState(false);
   const [productId, setProductId] = useState("");
   const [variants, setVariants] = useState([]);
-  const [variantId, setVariantId] = useState("");
+  const [variantLoading, setVariantLoading] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [priceType, setPriceType] = useState("retail");
   const [lines, setLines] = useState([]);
@@ -42,26 +45,64 @@ export default function NewSale({ token, admin, branches, preferredBranchId, ass
     return () => { clearTimeout(delay); controller.abort(); };
   }, [token, customerSearch]);
 
+  // Sellable products come from the selected branch's stock, not the global catalog.
   useEffect(() => {
     const controller = new AbortController();
-    const delay = setTimeout(() => {
-      salesApi.products(token, { search: productSearch, limit: 100 }, controller.signal)
-        .then((response) => setProducts(response.products || []))
-        .catch((err) => { if (err.name !== "AbortError") setError(err.message); });
-    }, 250);
 
-    return () => { clearTimeout(delay); controller.abort(); };
-  }, [token, productSearch]);
+    setProducts([]);
+    setBranchStock([]);
+    setProductId("");
+    setVariants([]);
+    setStockLoading(Boolean(branchId));
+
+    if (!branchId) return () => controller.abort();
+
+    async function loadBranchStock() {
+      try {
+        const records = await fetchBranchStock(token, branchId, controller.signal);
+        if (controller.signal.aborted) return;
+
+        const available = records.filter((item) =>
+          Number(item.quantity) > 0 && item.variant?.product?._id
+        );
+        setBranchStock(available);
+
+        const unique = new Map();
+        for (const item of available) {
+          const product = item.variant.product;
+          if (product.isActive !== false) unique.set(product._id, product);
+        }
+        setProducts([...unique.values()]);
+      } catch (err) {
+        if (err.name !== "AbortError") setError(err.message);
+      } finally {
+        if (!controller.signal.aborted) setStockLoading(false);
+      }
+    }
+
+    loadBranchStock();
+    return () => controller.abort();
+  }, [token, branchId]);
+
+  const availableProducts = useMemo(() => {
+    const term = productSearch.trim().toLowerCase();
+    return products.filter((item) =>
+      `${item.brand || ""} ${item.name || ""}`.toLowerCase().includes(term)
+    );
+  }, [products, productSearch]);
 
   useEffect(() => {
-    setVariantId("");
     setVariants([]);
+    setVariantLoading(Boolean(productId));
     if (!productId) return;
 
     const controller = new AbortController();
     salesApi.variants(token, productId, controller.signal)
-      .then((response) => setVariants(response.variants || []))
-      .catch((err) => { if (err.name !== "AbortError") setError(err.message); });
+      .then((response) => {
+        if (!controller.signal.aborted) setVariants(response.variants || []);
+      })
+      .catch((err) => { if (err.name !== "AbortError") setError(err.message); })
+      .finally(() => { if (!controller.signal.aborted) setVariantLoading(false); });
 
     return () => controller.abort();
   }, [token, productId]);
@@ -72,15 +113,36 @@ export default function NewSale({ token, admin, branches, preferredBranchId, ass
 
   function addItem() {
     setError("");
-    const variant = variants.find((item) => item._id === variantId);
+    if (!productId || variantLoading) {
+      setError("Select a shoe and allow its pricing to load.");
+      return;
+    }
 
-    if (!variant || !Number.isSafeInteger(Number(quantity)) || Number(quantity) <= 0) {
-      setError("Select a valid shoe variant and quantity.");
+    // The simplified catalog must have exactly one internal variant per shoe.
+    if (variants.length !== 1) {
+      setError("This shoe does not have exactly one stock item. Contact the administrator.");
+      return;
+    }
+
+    const variant = variants[0];
+    const variantId = variant._id;
+    const count = Number(quantity);
+
+    if (!Number.isSafeInteger(count) || count <= 0) {
+      setError("Enter a valid quantity.");
+      return;
+    }
+
+    const stock = branchStock.find((item) =>
+      String(item.variant?._id) === String(variantId)
+    );
+    if (!stock || count > Number(stock.quantity)) {
+      setError(`Insufficient stock in this branch. Available: ${stock?.quantity || 0} pairs.`);
       return;
     }
 
     if (lines.some((line) => line.variantId === variantId)) {
-      setError("That shoe variant is already in the sale.");
+      setError("This shoe is already in the sale. Remove it first to change the quantity or price type.");
       return;
     }
 
@@ -88,16 +150,12 @@ export default function NewSale({ token, admin, branches, preferredBranchId, ass
 
     setLines((items) => [...items, {
       variantId,
-      sku: variant.sku,
-      size: variant.size,
-      color: variant.color,
       productName: products.find((item) => item._id === productId)?.name || "Shoe",
-      quantity: Number(quantity),
+      quantity: count,
       priceType,
       unitPrice: price,
     }]);
 
-    setVariantId("");
     setQuantity(1);
   }
 
@@ -106,8 +164,19 @@ export default function NewSale({ token, admin, branches, preferredBranchId, ass
     setError("");
 
     try {
-      if (admin && !branchId) throw new Error("Select the receiving branch.");
+      if (admin && !branchId) throw new Error("Select the selling branch.");
       if (!lines.length) throw new Error("Add at least one shoe to the sale.");
+
+      // Recheck availability in case another sale changed stock while this dialog was open.
+      const latestStock = await fetchBranchStock(token, branchId);
+      for (const line of lines) {
+        const stock = latestStock.find((item) =>
+          String(item.variant?._id) === String(line.variantId)
+        );
+        if (!stock || line.quantity > Number(stock.quantity)) {
+          throw new Error(`${line.productName}: only ${stock?.quantity || 0} pairs available in this branch.`);
+        }
+      }
 
       const discountAmount = admin ? toPesewas(discount) : 0;
       const amountPaid = toPesewas(paid);
@@ -159,16 +228,18 @@ export default function NewSale({ token, admin, branches, preferredBranchId, ass
           {admin && (
             <label className="jbc-field">
               Selling branch
-              <select required value={branchId} onChange={(event) => setBranchId(event.target.value)}>
+              <select required value={branchId} onChange={(event) => {
+                  setBranchId(event.target.value);
+                  setLines([]);
+                  setProductId("");
+                  setProductSearch("");
+                }}>
                 <option value="">Select branch</option>
                 {branches.map((branch) => <option key={branch._id} value={branch._id}>{branch.name}</option>)}
               </select>
             </label>
           )}
-          <label className="jbc-field">
-            Find customer (optional for fully paid sales)
-            <input value={customerSearch} onChange={(event) => setCustomerSearch(event.target.value)} placeholder="Search name or phone" />
-          </label>
+
           <label className="jbc-field">
             Customer
             <select value={customerId} onChange={(event) => setCustomerId(event.target.value)}>
@@ -179,23 +250,16 @@ export default function NewSale({ token, admin, branches, preferredBranchId, ass
         </div>
 
         <PanelHeading text="Add shoes" />
+        {branchId && !stockLoading && products.length === 0 && (
+          <p className="jbc-footnote">No shoes with available stock in the selected branch.</p>
+        )}
         <div className="jbc-form-grid">
-          <label className="jbc-field">
-            Search product catalog
-            <input value={productSearch} onChange={(event) => setProductSearch(event.target.value)} placeholder="Shoe name" />
-          </label>
+
           <label className="jbc-field">
             Product
             <select value={productId} onChange={(event) => setProductId(event.target.value)}>
-              <option value="">Select shoe</option>
-              {products.map((product) => <option key={product._id} value={product._id}>{product.name}</option>)}
-            </select>
-          </label>
-          <label className="jbc-field">
-            Size / color / SKU
-            <select value={variantId} onChange={(event) => setVariantId(event.target.value)}>
-              <option value="">Select variant</option>
-              {variants.map((variant) => <option key={variant._id} value={variant._id}>{variant.size} · {variant.color} · {variant.sku}</option>)}
+              <option value="">{stockLoading ? "Loading branch inventory..." : "Select shoe"}</option>
+              {availableProducts.map((product) => <option key={product._id} value={product._id}>{product.brand ? `${product.brand} · ` : ""}{product.name}</option>)}
             </select>
           </label>
           <label className="jbc-field">
@@ -210,16 +274,16 @@ export default function NewSale({ token, admin, branches, preferredBranchId, ass
             <input type="number" min="1" step="1" value={quantity} onChange={(event) => setQuantity(event.target.value)} />
           </label>
           <div className="jbc-field" style={{ justifyContent: "end" }}>
-            <button type="button" className="jbc-btn gold" onClick={addItem}><Plus size={16} /> Add to sale</button>
+            <button type="button" className="jbc-btn gold" disabled={!productId || variantLoading || stockLoading} onClick={addItem}><Plus size={16} /> {variantLoading ? "Loading shoe..." : "Add to sale"}</button>
           </div>
         </div>
 
         <div className="jbc-table-wrap" style={{ marginTop: 18 }}>
           <table className="jbc-table">
-            <thead><tr><th>Product</th><th>Variant</th><th>Type</th><th>Qty</th><th>Unit price</th><th>Line total</th><th></th></tr></thead>
+            <thead><tr><th>Product</th><th>Type</th><th>Qty</th><th>Unit price</th><th>Line total</th><th></th></tr></thead>
             <tbody>{lines.map((line) => (
               <tr key={line.variantId}>
-                <td>{line.productName}</td><td>{line.size} / {line.color} · {line.sku}</td>
+                <td>{line.productName}</td>
                 <td>{line.priceType}</td><td>{line.quantity}</td><td>{money(line.unitPrice)}</td>
                 <td>{money(line.unitPrice * line.quantity)}</td>
                 <td><button type="button" className="jbc-mini" aria-label="Remove shoe" onClick={() => setLines((current) => current.filter((item) => item.variantId !== line.variantId))}><Trash2 size={15} /></button></td>
@@ -246,4 +310,31 @@ export default function NewSale({ token, admin, branches, preferredBranchId, ass
 
 function PanelHeading({ text }) {
   return <h3 style={{ fontFamily: "Georgia, serif", margin: "24px 0 12px" }}>{text}</h3>;
+}
+
+// GET /api/inventory is paginated. Read every page rather than dropping
+// sellable shoes that happen not to be on the first page.
+async function fetchBranchStock(token, branchId, signal) {
+  if (!branchId) return [];
+
+  const first = await inventoryApi.stock(token, {
+    branchId, page: 1, limit: 100,
+  }, signal);
+
+  const records = [...(first.inventory || [])];
+  const totalPages = Math.max(1, Number(first.totalPages) ||
+    Math.ceil(Number(first.total || records.length) / 100));
+
+  if (totalPages > 100) {
+    throw new Error("Branch inventory is too large to load safely. Ask the administrator to enable server-side product filtering.");
+  }
+
+  for (let page = 2; page <= totalPages; page += 1) {
+    const result = await inventoryApi.stock(token, {
+      branchId, page, limit: 100,
+    }, signal);
+    records.push(...(result.inventory || []));
+  }
+
+  return records;
 }

@@ -19,6 +19,16 @@ const typeNames = {
   TRANSFER_OUT: "Transfer out",
 };
 
+const productOf = (movement) => movement?.variant?.product || movement?.product || null;
+const productName = (movement) => {
+  const product = productOf(movement);
+  return (typeof product === "object" ? product?.name : null) || movement?.productName || "Product unavailable";
+};
+const productBrand = (movement) => {
+  const product = productOf(movement);
+  return typeof product === "object" ? product?.brand || "" : "";
+};
+
 const formatDate = (value) => value
   ? new Date(value).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })
   : "—";
@@ -95,9 +105,8 @@ export default function StockMovements() {
 
     const term = debouncedSearch.toLowerCase();
     const content = [
-      movement.variant?.sku,
-      movement.variant?.color,
-      movement.variant?.size,
+      productName(movement),
+      productBrand(movement),
       movement.reason,
       movement.referenceId,
       movement.performedBy?.fullName,
@@ -132,7 +141,7 @@ export default function StockMovements() {
         {admin && <select className="jbi-select" value={branchId} onChange={(event) => { setBranchId(event.target.value); setPage(1); }}>
           {branches.map((branch) => <option key={branch._id} value={branch._id}>{branch.name}</option>)}
         </select>}
-        <SearchInput value={search} onChange={setSearch} placeholder="Filter displayed movements by SKU, reason or staff..." />
+        <SearchInput value={search} onChange={setSearch} placeholder="Filter displayed movements by shoe, reason or staff..." />
         <select className="jbi-select" value={type} onChange={(event) => setType(event.target.value)}>
           <option value="">All movement types</option>
           {Object.entries(typeNames).map(([value, name]) => <option value={value} key={value}>{name}</option>)}
@@ -143,11 +152,10 @@ export default function StockMovements() {
 
       {!branchId ? <Empty text="No assigned branch found." /> : loading ? <Loading /> : visible.length === 0 ? <Empty text="No movements match these filters." /> : <div className="jbi-table-scroll">
         <table className="jbi-table">
-          <thead><tr><th>Date / Time</th><th>SKU</th><th>Size / Color</th><th>Type</th><th>Qty Change</th><th>Before</th><th>After</th><th>Reason</th><th>Performed By</th><th>Details</th></tr></thead>
+          <thead><tr><th>Date / Time</th><th>Product</th><th>Type</th><th>Qty Change</th><th>Before</th><th>After</th><th>Reason</th><th>Performed By</th><th>Details</th></tr></thead>
           <tbody>{visible.map((movement) => <tr key={movement._id}>
             <td>{formatDate(movement.createdAt)}</td>
-            <td><strong>{movement.variant?.sku || "—"}</strong></td>
-            <td>{movement.variant?.size || "—"} / {movement.variant?.color || "—"}</td>
+            <td><strong>{productName(movement)}</strong>{productBrand(movement) && <span className="jbi-subtext">{productBrand(movement)}</span>}</td>
             <td><span className={`jbi-pill ${movement.quantityChange > 0 ? "green" : "red"}`}>{typeNames[movement.type] || movement.type}</span></td>
             <td className={movement.quantityChange > 0 ? "jbi-positive" : "jbi-negative"}>{movement.quantityChange > 0 ? "+" : ""}{movement.quantityChange}</td>
             <td>{movement.quantityBefore}</td>
@@ -165,7 +173,8 @@ export default function StockMovements() {
     {selected && <Modal title="Stock Movement Details" onClose={() => setSelected(null)}>
       <div className="jbi-detail-grid jbi-movement-grid">
         <div><span>Movement type</span><strong>{typeNames[selected.type] || selected.type}</strong></div>
-        <div><span>SKU</span><strong>{selected.variant?.sku || "—"}</strong></div>
+        <div><span>Product</span><strong>{productName(selected)}</strong></div>
+        {productBrand(selected) && <div><span>Brand</span><strong>{productBrand(selected)}</strong></div>}
         <div><span>Quantity changed</span><strong>{selected.quantityChange}</strong></div>
         <div><span>Stock before</span><strong>{selected.quantityBefore}</strong></div>
         <div><span>Stock after</span><strong>{selected.quantityAfter}</strong></div>
