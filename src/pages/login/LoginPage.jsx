@@ -67,7 +67,7 @@ export default function LoginPage({ onLogin }) {
       <header className="jb-login-topbar">
         <div className="jb-login-topbar-brand">
           <span className="jb-header-monogram" aria-hidden="true">JB</span>
-          <span className="jb-header-name">JOHNBITRACO</span>
+          <span className="jb-header-name">JOHNBTRACO</span>
           <span className="jb-header-divider" />
           <span className="jb-header-system">Inventory &amp; Financial Management System</span>
         </div>
@@ -75,13 +75,13 @@ export default function LoginPage({ onLogin }) {
       </header>
 
       <div className="jb-login-layout">
-        <section className="jb-showroom-panel" aria-label="JOHNBITRACO premium footwear">
-          <img src={showroom} alt="Luxury footwear showroom with JOHNBITRACO welcome message" />
+        <section className="jb-showroom-panel" aria-label="JOHNBTRACO premium footwear">
+          <img src={showroom} alt="Luxury footwear showroom with JOHNBTRACO welcome message" />
         </section>
 
         <section className="jb-form-side">
           <div className="jb-login-card">
-            <img className="jb-main-logo" src={logo} alt="JOHNBITRACO ENT. – Deals in quality executive products" />
+            <img className="jb-main-logo" src={logo} alt="JOHNBTRACO ENT. – Deals in quality executive products" />
 
             <h1 className="jb-signin-heading">Sign in</h1>
             <p className="jb-signin-subtitle">Access your business dashboard securely</p>

@@ -98,7 +98,7 @@ export default function Dashboard() {
   const chartColors = ["#850d19", "#d49a23", "#202123", "#7c8999", "#e0c99d"];
 
   if (role === "employee") {
-    return <section className="jbd-page"><div className="jbd-heading"><div><p>Home &nbsp;›&nbsp; Dashboard</p><h1>Dashboard</h1><span>Welcome to JOHNBITRACO.</span></div></div><div className="jbd-panel jbd-employee"><Package size={32} /><h2>Stock viewing access</h2><p>Your employee account is restricted to viewing inventory in your assigned branch.</p><Link to="/inventory" className="jbd-primary-link">View Inventory <ArrowUpRight size={16}/></Link></div></section>;
+    return <section className="jbd-page"><div className="jbd-heading"><div><p>Home &nbsp;›&nbsp; Dashboard</p><h1>Dashboard</h1><span>Welcome to JOHNBTRACO.</span></div></div><div className="jbd-panel jbd-employee"><Package size={32} /><h2>Stock viewing access</h2><p>Your employee account is restricted to viewing inventory in your assigned branch.</p><Link to="/inventory" className="jbd-primary-link">View Inventory <ArrowUpRight size={16}/></Link></div></section>;
   }
 
   return <section className="jbd-page">

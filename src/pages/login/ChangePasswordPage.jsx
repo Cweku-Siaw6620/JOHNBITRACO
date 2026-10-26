@@ -99,8 +99,8 @@ export default function ChangePasswordPage({ token, onChanged }) {
 
   return (
     <main className="jb-change-layout">
-      <section className="jb-change-hero" aria-label="JOHNBITRACO luxury footwear showroom">
-        <img src={showroom} alt="JOHNBITRACO premium product showroom" />
+      <section className="jb-change-hero" aria-label="JOHNBTRACO luxury footwear showroom">
+        <img src={showroom} alt="JOHNBTRACO premium product showroom" />
       </section>
 
       <section className="jb-change-main">

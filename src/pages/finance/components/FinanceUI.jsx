@@ -26,7 +26,7 @@ export function FinanceHeader({ title, description, children }) {
   return (
     <header className="jbf-header">
       <div>
-        <span className="jbf-eyebrow">JOHNBITRACO / FINANCE</span>
+        <span className="jbf-eyebrow">JOHNBTRACO / FINANCE</span>
         <h1>{title}</h1>
         <p>{description}</p>
       </div>
