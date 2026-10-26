@@ -1,4 +1,4 @@
-const API_BASE = (import.meta.env.VITE_API_LOCAL_URL || "http://localhost:5000" ).replace(/\/$/, "");
+const API_BASE = (import.meta.env.VITE_API_HOSTED_URL || "http://localhost:5000" ).replace(/\/$/, "");
 
 export function financeQuery(filters = {}) {
   const params = new URLSearchParams();
